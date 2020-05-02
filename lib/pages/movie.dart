@@ -13,7 +13,7 @@ final String movieDirectorPattern = 'movie_author';
 
 final Map<Object, RoutePattern> moviePatterns = <Object, RoutePattern>{
   moviesRoutePattern: RoutePattern('/movies'),
-  movieRoutePattern: RoutePattern('/movie/:id/*', children: {
+  movieRoutePattern: RoutePattern('/movies/:id/*', children: {
     movieDescriptionPattern: RoutePattern('description'),
     movieDirectorPattern: RoutePattern('description/director'),
   }),
@@ -25,10 +25,10 @@ final Map<Object, WidgetBuilder> movieBuilders = <Object, WidgetBuilder>{
 };
 
 Widget movieListWidget(BuildContext context) {
-  final ParsedResult parsedResult = ParsedResultWidget.of(context);
+  final PageConfiguration pageConfiguration = PageConfiguration.of(context);
   String searchTerm;
-  if (parsedResult.queryParameters != null && parsedResult.queryParameters.containsKey('search')) {
-    searchTerm = parsedResult.queryParameters['search'][0];
+  if (pageConfiguration.queryParameters != null && pageConfiguration.queryParameters.containsKey('search')) {
+    searchTerm = pageConfiguration.queryParameters['search'][0];
   }
   return MovieList(searchTerm: searchTerm);
 }
@@ -69,16 +69,21 @@ class MovieList extends StatelessWidget {
                     return Divider();
                   }
                   return InkWell(
-                    child: Text(movieList[(index ~/ 2)]['name'] as String),
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text(movieList[(index ~/ 2)]['name'] as String),
+                    ),
                     onTap: () {
                       final GenericRouterDelegate delegate = Router.of(context).routerDelegate as GenericRouterDelegate;
                       // Pushes a new page route
-                      delegate.parsedResult = List<ParsedResult>.from(delegate.parsedResult..add(ParsedResult(
-                        patternKey: movieRoutePattern,
-                        routeParameters: <String, String>{
-                          'id': movieList[(index ~/ 2)]['id']
-                        },
-                        subRouteResult: null,
+                      delegate.pageConfigurations = List<PageConfiguration>.from(delegate.pageConfigurations..add(PageConfiguration(
+                        parsedResult: ParsedResult(
+                          patternKey: movieRoutePattern,
+                          routeParameters: <String, String>{
+                            'id': movieList[(index ~/ 2)]['id']
+                          },
+                          subRouteResult: null,
+                        )
                       )));
                     },
                   );
@@ -102,11 +107,33 @@ class MovieList extends StatelessWidget {
   }
 }
 
+class ParsedResultWidget extends InheritedWidget {
+  const ParsedResultWidget({
+    Key key,
+    @required this.data,
+    @required Widget child,
+  }) : assert(child != null),
+      super(key: key, child: child);
+
+  final ParsedResult data;
+
+  static ParsedResult of(BuildContext context) {
+    assert(context != null);
+    final ParsedResultWidget query = context.dependOnInheritedWidgetOfExactType<ParsedResultWidget>();
+    if (query != null)
+      return query.data;
+    return null;
+  }
+
+  @override
+  bool updateShouldNotify(ParsedResultWidget oldWidget) => data != oldWidget.data;
+}
+
 Widget movieWidget(BuildContext context) {
-  final ParsedResult parsedResult = ParsedResultWidget.of(context);
+  final PageConfiguration pageConfiguration = PageConfiguration.of(context);
   return ParsedResultWidget(
-    data: parsedResult.subRouteResult,
-    child: MoviePage(parameters: parsedResult.routeParameters),
+    data: pageConfiguration.parsedResult.subRouteResult,
+    child: MoviePage(parameters: pageConfiguration.parsedResult.routeParameters),
   );
 }
 
@@ -205,20 +232,23 @@ class MovieRouterDelegate extends RouterDelegate<void> {
         RaisedButton(
           child: Text('See description'),
           onPressed: () {
-            final ParsedResult current = _parent.parsedResult.removeLast();
+            final PageConfiguration current = _parent.pageConfigurations.removeLast();
             // Makes sure we are on the right page.
-            assert(current.patternKey == movieRoutePattern);
+            assert(current.parsedResult.patternKey == movieRoutePattern);
             // Modifies the subroute directly.
-            final ParsedResult newResults = ParsedResult(
-              patternKey: current.patternKey,
-              routeParameters: current.routeParameters,
+            final PageConfiguration newResults = PageConfiguration(
+              parsedResult: ParsedResult(
+                patternKey: current.parsedResult.patternKey,
+                routeParameters: current.parsedResult.routeParameters,
+                subRouteResult: ParsedResult(
+                  patternKey: movieDescriptionPattern,
+                )
+              ),
               queryParameters: current.queryParameters,
-              subRouteResult: ParsedResult(
-                patternKey: movieDescriptionPattern,
-              )
+              state: current.state,
             );
-            _parent.parsedResult = List<ParsedResult>.from(
-              _parent.parsedResult..add(newResults)
+            _parent.pageConfigurations = List<PageConfiguration>.from(
+              _parent.pageConfigurations..add(newResults)
             );
           },
         )
@@ -235,20 +265,23 @@ class MovieRouterDelegate extends RouterDelegate<void> {
         RaisedButton(
           child: Text('See director'),
           onPressed: () {
-            final ParsedResult current = _parent.parsedResult.removeLast();
+            final PageConfiguration current = _parent.pageConfigurations.removeLast();
             // Makes sure we are on the right page.
-            assert(current.patternKey == movieRoutePattern);
+            assert(current.parsedResult.patternKey == movieRoutePattern);
             // Modifies the subroute directly.
-            final ParsedResult newResults = ParsedResult(
-              patternKey: current.patternKey,
-              routeParameters: current.routeParameters,
+            final PageConfiguration newResults = PageConfiguration(
+              parsedResult: ParsedResult(
+                patternKey: current.parsedResult.patternKey,
+                routeParameters: current.parsedResult.routeParameters,
+                subRouteResult: ParsedResult(
+                  patternKey: movieDirectorPattern,
+                )
+              ),
               queryParameters: current.queryParameters,
-              subRouteResult: ParsedResult(
-                patternKey: movieDirectorPattern,
-              )
+              state: current.state,
             );
-            _parent.parsedResult = List<ParsedResult>.from(
-              _parent.parsedResult..add(newResults)
+            _parent.pageConfigurations = List<PageConfiguration>.from(
+              _parent.pageConfigurations..add(newResults)
             );
           },
         )

@@ -1,43 +1,54 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
+// think about state!
 class ParsedResult {
   ParsedResult({
     this.patternKey,
     this.routeParameters,
-    this.queryParameters,
     this.subRouteResult,
   });
   final Object patternKey;
   final ParsedResult subRouteResult;
   final Map<String, String> routeParameters;
-  final Map<String, List<String>> queryParameters;
+
   @override
   String toString() {
     return '$patternKey $subRouteResult';
   }
 }
 
-class ParsedResultWidget extends InheritedWidget {
-  const ParsedResultWidget({
+class PageConfiguration {
+  const PageConfiguration({
+    this.parsedResult,
+    this.state,
+    this.queryParameters,
+  });
+  final ParsedResult parsedResult;
+  final Map<String, String> state;
+  final Map<String, List<String>> queryParameters;
+
+
+  static PageConfiguration of(BuildContext context) {
+    assert(context != null);
+    final PageConfigurationWidget query = context.dependOnInheritedWidgetOfExactType<PageConfigurationWidget>();
+    if (query != null)
+      return query.data;
+    return null;
+  }
+}
+
+class PageConfigurationWidget extends InheritedWidget {
+  const PageConfigurationWidget({
     Key key,
     @required this.data,
     @required Widget child,
   }) : assert(child != null),
        super(key: key, child: child);
 
-  final ParsedResult data;
-
-  static ParsedResult of(BuildContext context) {
-    assert(context != null);
-    final ParsedResultWidget query = context.dependOnInheritedWidgetOfExactType<ParsedResultWidget>();
-    if (query != null)
-      return query.data;
-    return null;
-  }
+  final PageConfiguration data;
 
   @override
-  bool updateShouldNotify(ParsedResultWidget oldWidget) => data != oldWidget.data;
+  bool updateShouldNotify(PageConfigurationWidget oldWidget) => data != oldWidget.data;
 }
 
 class RoutePattern {

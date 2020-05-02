@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'routing_util.dart';
 
-class GenericRouterDelegate extends RouterDelegate<List<ParsedResult>> with PopNavigatorRouterDelegateMixin<List<ParsedResult>> {
+class GenericRouterDelegate extends RouterDelegate<List<PageConfiguration>> with PopNavigatorRouterDelegateMixin<List<PageConfiguration>> {
   GenericRouterDelegate({
     @required this.routeBuilders,
     this.onPushNameRoute,
@@ -10,12 +10,12 @@ class GenericRouterDelegate extends RouterDelegate<List<ParsedResult>> with PopN
 
   final Map<Object, WidgetBuilder> routeBuilders;
 
-  List<ParsedResult> get parsedResult => _parsedResult;
-  List<ParsedResult> _parsedResult;
-  set parsedResult (List<ParsedResult> other) {
-    if (_parsedResult == other)
+  List<PageConfiguration> get pageConfigurations => _pageConfigurations;
+  List<PageConfiguration> _pageConfigurations;
+  set pageConfigurations (List<PageConfiguration> other) {
+    if (_pageConfigurations == other)
       return;
-    _parsedResult = other;
+    _pageConfigurations = other;
     notifyListeners();
   }
 
@@ -25,26 +25,26 @@ class GenericRouterDelegate extends RouterDelegate<List<ParsedResult>> with PopN
   GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   @override
-  Future<List<ParsedResult>> get currentConfiguration {
-    return SynchronousFuture<List<ParsedResult>>(parsedResult);
+  Future<List<PageConfiguration>> get currentConfiguration {
+    return SynchronousFuture<List<PageConfiguration>>(pageConfigurations);
   }
 
   @override
-  Future<void> setNewRoutePath(List<ParsedResult> parsedResult) {
-    _parsedResult = parsedResult;
+  Future<void> setNewRoutePath(List<PageConfiguration> pageConfigurations) {
+    _pageConfigurations = pageConfigurations;
     return SynchronousFuture<void>(null);
   }
 
-  Page<void> _producePage(ParsedResult parsedResult) {
-    final Object patternKey = parsedResult.patternKey;
+  Page<void> _producePage(PageConfiguration pageConfiguration) {
+    final Object patternKey = pageConfiguration.parsedResult.patternKey;
     return MaterialPage(
       key: ValueKey<String>(patternKey),
       builder: (BuildContext context) {
-        return ParsedResultWidget(
-          data: parsedResult,
+        return PageConfigurationWidget(
+          data: pageConfiguration,
           child: Builder(
             builder: (BuildContext context) {
-              return routeBuilders[parsedResult.patternKey](context);
+              return routeBuilders[pageConfiguration.parsedResult.patternKey](context);
             },
           )
         );
@@ -53,13 +53,13 @@ class GenericRouterDelegate extends RouterDelegate<List<ParsedResult>> with PopN
   }
 
   List<Page<void>> _buildPages() {
-    return parsedResult.map<Page<void>>(_producePage).toList();
+    return pageConfigurations.map<Page<void>>(_producePage).toList();
   }
 
   bool _handlePopPage(Route<dynamic> route, dynamic result) {
     final bool success = route.didPop(result);
     if (success)
-      parsedResult.removeLast();
+      pageConfigurations.removeLast();
     return success;
   }
 

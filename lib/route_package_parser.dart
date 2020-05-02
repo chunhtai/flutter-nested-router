@@ -3,14 +3,13 @@ import 'package:flutter/widgets.dart';
 
 import 'routing_util.dart';
 
-class GenericRoutePackageParser extends RoutePackageParser<List<ParsedResult>> {
+class GenericRoutePackageParser extends RoutePackageParser<List<PageConfiguration>> {
   GenericRoutePackageParser({this.routePatterns});
   final Map<Object, RoutePattern> routePatterns;
 
   ParsedResult _parse(
     String routeName,
     Map<Object, RoutePattern> routingTable,
-    Map<String, List<String>> queryParameters
   ) {
     RouteMatch match;
     for (final Object patternKey in routingTable.keys) {
@@ -19,12 +18,11 @@ class GenericRoutePackageParser extends RoutePackageParser<List<ParsedResult>> {
         final Map<Object, RoutePattern> subPatterns = routingTable[patternKey].children;
         ParsedResult subResult;
         if (match.subRouteName?.isNotEmpty == true) {
-          subResult = _parse(match.subRouteName, subPatterns, queryParameters);
+          subResult = _parse(match.subRouteName, subPatterns);
         }
         return ParsedResult(
           routeParameters: match.routeParameters,
           patternKey: patternKey,
-          queryParameters: queryParameters,
           subRouteResult: subResult,
         );
       }
@@ -33,7 +31,7 @@ class GenericRoutePackageParser extends RoutePackageParser<List<ParsedResult>> {
   }
 
   @override
-  Future<List<ParsedResult>> parse(RoutePackage routePackage) {
+  Future<List<PageConfiguration>> parse(RoutePackage routePackage) {
     String routeName = routePackage.routeName;
     final int startOfQuery = routeName.indexOf('?');
     final String path = routeName.substring(0, startOfQuery >= 0 ? startOfQuery : routeName.length);
@@ -47,13 +45,19 @@ class GenericRoutePackageParser extends RoutePackageParser<List<ParsedResult>> {
         paths.add(path.toString());
       }
     }
-    final Map<String, List<String>> arguments = Map<String, List<String>>.from(syntheticUrl.queryParametersAll);
-    final List<ParsedResult> result = <ParsedResult>[];
+    final Map<String, List<String>> queryParameters = Map<String, List<String>>.from(syntheticUrl.queryParametersAll);
+    final List<PageConfiguration> result = <PageConfiguration>[];
     for (String routePath in paths)
-      result.add(_parse(routePath, routePatterns, arguments));
-    result.removeWhere((ParsedResult element) => element == null);
-    assert(_restoreRouteName(result.last, routePatterns) == paths.last, 'no match for route name ${paths.last}');
-    return SynchronousFuture<List<ParsedResult>>(result);
+      result.add(
+        PageConfiguration(
+          parsedResult: _parse(routePath, routePatterns),
+          queryParameters: queryParameters,
+          state: routePackage.state,
+        )
+      );
+    result.removeWhere((PageConfiguration element) => element.parsedResult == null);
+    assert(_restoreRouteName(result.last.parsedResult, routePatterns) == paths.last, 'no match for route name ${paths.last}');
+    return SynchronousFuture<List<PageConfiguration>>(result);
   }
 
   String _restoreRouteName(ParsedResult result, Map<Object, RoutePattern> patterns) {
@@ -73,9 +77,9 @@ class GenericRoutePackageParser extends RoutePackageParser<List<ParsedResult>> {
   }
 
   @override
-  Future<RoutePackage> restore(List<ParsedResult> configuration) {
+  Future<RoutePackage> restore(List<PageConfiguration> configuration) {
     final String routeName = Uri(
-      path: _restoreRouteName(configuration.last, routePatterns),
+      path: _restoreRouteName(configuration.last.parsedResult, routePatterns),
       queryParameters: configuration.last.queryParameters
     ).toString();
     return SynchronousFuture<RoutePackage>(RoutePackage(routeName: routeName));

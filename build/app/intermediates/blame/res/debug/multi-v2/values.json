@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "/Users/chtai/apps/nested_routers/build/app/intermediates/incremental/mergeDebugResources/merged.dir/values/values.xml",
+            "outputFile": "/Users/chtai/apps/flutter-nested-router/build/app/intermediates/incremental/mergeDebugResources/merged.dir/values/values.xml",
             "map": [
                 {
-                    "source": "/Users/chtai/apps/nested_routers/android/app/src/main/res/values/styles.xml",
+                    "source": "/Users/chtai/apps/flutter-nested-router/android/app/src/main/res/values/styles.xml",
                     "from": {
                         "startLines": "3,14",
                         "startColumns": "4,4",

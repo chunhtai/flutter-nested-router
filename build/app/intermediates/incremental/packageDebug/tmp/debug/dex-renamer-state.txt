@@ -1,4 +1,4 @@
-#Fri May 01 10:30:52 PDT 2020
-base.0=/Users/chtai/apps/nested_routers/build/app/intermediates/dex/debug/mergeDexDebug/out/classes.dex
+#Fri May 01 16:39:05 PDT 2020
+base.0=/Users/chtai/apps/flutter-nested-router/build/app/intermediates/dex/debug/mergeDexDebug/out/classes.dex
 path.0=classes.dex
 renamed.0=classes.dex
